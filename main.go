@@ -20,8 +20,14 @@ type Response struct {
 	Username  string `json:"username"`
 }
 
-const PROXY_REDIS_KEY_PREFIX = "proxy-experiment"
-const PROXY_REDIS_COUNT_KEY_PREFIX = "proxy-experiment-count"
+func getClientIPAddress(req *http.Request) string {
+	ipAddress := req.Header.Get("x-real-ip")
+	if ipAddress == "" {
+		ipAddress = req.RemoteAddr
+	}
+
+	return ipAddress
+}
 
 func main() {
 	db := internal.InitDB()
@@ -30,10 +36,9 @@ func main() {
 	slog.Info("Server running.")
 
 	server.GET("/", func(ctx *gin.Context) {
-
 		response := Response{
-			Message:   "proxy experiment, user data:",
-			IPAddress: ctx.RemoteIP(),
+			Message:   "user data:",
+			IPAddress: getClientIPAddress(ctx.Request),
 			Username:  ctx.GetHeader("x-username"),
 		}
 		ctx.JSON(http.StatusOK, response)
@@ -47,7 +52,7 @@ func main() {
 			return
 		}
 
-		ipAddress := ctx.RemoteIP()
+		ipAddress := getClientIPAddress(ctx.Request)
 
 		var user internal.User
 
@@ -113,7 +118,7 @@ func main() {
 		}
 
 		response := DataResponse{
-			Message: "hit success.",
+			Message: "List success.",
 			Data:    users,
 		}
 
